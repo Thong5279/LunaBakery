@@ -16,7 +16,8 @@ import {
   FaTimes,
   FaSave,
   FaPhone,
-  FaMapMarkerAlt
+  FaMapMarkerAlt,
+  FaCamera
 } from "react-icons/fa";
 
 const Profile = () => {
@@ -28,6 +29,7 @@ const Profile = () => {
   // State for editing profile
   const [isEditing, setIsEditing] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -113,6 +115,59 @@ const Profile = () => {
     }
   };
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh hợp lệ');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File ảnh không được vượt quá 5MB');
+      return;
+    }
+
+    setAvatarLoading(true);
+    
+    try {
+      const token = localStorage.getItem('userToken');
+      const backendURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:9000';
+      
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await fetch(`${backendURL}/api/users/upload-avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update user in localStorage
+        const currentUser = JSON.parse(localStorage.getItem('userInfo'));
+        currentUser.avatar = data.avatar;
+        localStorage.setItem('userInfo', JSON.stringify(currentUser));
+        // Refresh page to update UI
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.message || 'Có lỗi xảy ra khi upload ảnh');
+      }
+    } catch (error) {
+      console.error('Upload avatar error:', error);
+      alert('Có lỗi xảy ra khi upload ảnh');
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "Chưa xác định";
     const date = new Date(dateString);
@@ -164,9 +219,39 @@ const Profile = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
               <div className="text-center mb-6">
-                <div className="w-24 h-24 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full mx-auto flex items-center justify-center text-white text-2xl font-bold mb-4">
-                  {user?.name?.charAt(0).toUpperCase()}
+                <div className="relative w-24 h-24 mx-auto mb-4">
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                      {user?.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  
+                  {/* Camera overlay */}
+                  <label className="absolute bottom-0 right-0 bg-pink-500 hover:bg-pink-600 text-white rounded-full p-2 cursor-pointer shadow-lg transition-colors">
+                    <FaCamera className="text-sm" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                      disabled={avatarLoading}
+                    />
+                  </label>
+                  
+                  {/* Loading overlay */}
+                  {avatarLoading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    </div>
+                  )}
                 </div>
+                
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">{user?.name}</h1>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(user?.role)}`}>
                   <FaCrown className="mr-1" />

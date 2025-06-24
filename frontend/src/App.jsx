@@ -19,6 +19,7 @@ import ProductManagement from "./components/Admin/ProductManagement";
 import EditProductPage from "./components/Admin/EditProductPage";
 import OderManagement from "./components/Admin/OrderManagement";
 import AnalyticsPage from "./components/Admin/AnalyticsPage";
+import GoogleCallback from "./components/Auth/GoogleCallback";
 
 import { Provider } from "react-redux";
 import store from "./redux/store"; // Assuming you have a Redux store set up
@@ -34,6 +35,7 @@ const App = () => {
             <Route index element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/auth/callback" element={<GoogleCallback />} />
             <Route path="/profile" element={<Profile />} />
             <Route
               path="/collections/:collection"

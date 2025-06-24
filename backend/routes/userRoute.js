@@ -2,6 +2,8 @@ const express = require("express");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { protect } = require("../middleware/authMiddleware");
+const multer = require("multer");
+const cloudinary = require("cloudinary").v2;
 
 const router = express.Router();
 
@@ -48,6 +50,10 @@ router.post("/register", async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            avatar: user.avatar,
+            phone: user.phone,
+            address: user.address,
+            createdAt: user.createdAt
           },
           token,
         });
@@ -100,6 +106,10 @@ router.post("/login", async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            avatar: user.avatar,
+            phone: user.phone,
+            address: user.address,
+            createdAt: user.createdAt
           },
           token,
         });
@@ -125,7 +135,7 @@ router.get("/profile",protect, async (req, res) => {
 
 router.put("/profile", protect, async (req, res) => {
   try {
-    const { name, email, phone, address } = req.body;
+    const { name, email, phone, address, avatar } = req.body;
     
     // Tìm user hiện tại
     const user = await User.findById(req.user._id);
@@ -147,6 +157,7 @@ router.put("/profile", protect, async (req, res) => {
     if (email) user.email = email;
     if (phone !== undefined) user.phone = phone;
     if (address !== undefined) user.address = address;
+    if (avatar !== undefined) user.avatar = avatar;
 
     const updatedUser = await user.save();
 
@@ -156,6 +167,7 @@ router.put("/profile", protect, async (req, res) => {
       email: updatedUser.email,
       phone: updatedUser.phone,
       address: updatedUser.address,
+      avatar: updatedUser.avatar,
       role: updatedUser.role,
       createdAt: updatedUser.createdAt
     });
@@ -163,6 +175,61 @@ router.put("/profile", protect, async (req, res) => {
   } catch (error) {
     console.error("Update profile error:", error);
     res.status(500).json({ message: "Lỗi server khi cập nhật thông tin" });
+  }
+});
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+// @route POST /api/users/upload-avatar
+//@desc Upload user avatar
+//@access Private
+
+router.post("/upload-avatar", protect, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Vui lòng chọn file ảnh" });
+    }
+
+    // Convert buffer to base64
+    const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    
+    // Upload to cloudinary
+    const uploadResponse = await cloudinary.uploader.upload(fileStr, {
+      upload_preset: "ml_default",
+      folder: "luna_bakery/avatars",
+      transformation: [
+        { width: 200, height: 200, crop: "fill", gravity: "face" },
+        { quality: "auto", fetch_format: "auto" }
+      ]
+    });
+
+    // Update user avatar
+    const user = await User.findById(req.user._id);
+    user.avatar = uploadResponse.secure_url;
+    await user.save();
+
+    res.json({
+      message: "Avatar uploaded successfully",
+      avatar: uploadResponse.secure_url
+    });
+
+  } catch (error) {
+    console.error("Upload avatar error:", error);
+    res.status(500).json({ message: "Lỗi server khi upload ảnh đại diện" });
   }
 });
 

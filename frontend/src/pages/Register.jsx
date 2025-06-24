@@ -4,6 +4,7 @@ import registerImage from '../assets/login.jpg';
 import {registerUser} from '../redux/slices/authSlice'; // Import the register action
 import { useDispatch, useSelector } from 'react-redux'; // Import useDispatch from react-redux
 import { mergeCart } from '../redux/slices/cartSlice';
+import { FaGoogle } from "react-icons/fa";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -36,6 +37,12 @@ const Register = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
        dispatch(registerUser({ name, email, password })) // Dispatch the register action
+    };
+
+    // Function to handle Google login
+    const handleGoogleLogin = () => {
+      const backendURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:9000';
+      window.location.href = `${backendURL}/api/auth/google`;
     };
 
 
@@ -88,6 +95,24 @@ const Register = () => {
             className="w-full bg-pink-50 hover:bg-pink-200 text-[#db2777] p-3 rounded-xl font-semibold transition-all duration-300 shadow-md hover:shadow-xl"
           >
             {loading ? "Đang đăng ký..." : "Đăng ký"}
+          </button>
+          
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Hoặc</span>
+            </div>
+          </div>
+          
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full bg-white hover:bg-gray-50 text-gray-900 p-3 rounded-xl font-semibold transition-all duration-300 shadow-md hover:shadow-xl border border-gray-300 flex items-center justify-center"
+          >
+            <FaGoogle className="mr-2 text-red-500" />
+            Đăng ký với Google
           </button>
           <p className="mt-6 text-center text-sm text-gray-600">
             Chưa có tài khoản?

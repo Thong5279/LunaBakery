@@ -1,6 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+
+// Load environment variables FIRST
+dotenv.config();
+
+const session = require("express-session");
+const passport = require("./config/passport");
 const connectDB = require("./config/db")
 const userRoute = require("./routes/userRoute");
 const productRoute = require("./routes/productRoutes");
@@ -13,13 +19,27 @@ const adminRoute = require("./routes/adminRoutes");
 const productAdminRoute = require("./routes/productAdminRoutes");
 const adminOrderRoute = require("./routes/adminOrderRoutes");
 const analyticsRoute = require("./routes/analyticsRoutes");
+const authRoute = require("./routes/authRoutes");
 
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-dotenv.config();
+// Session configuration for passport
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 const PORT = process.env.PORT || 3000;
 
@@ -43,6 +63,7 @@ app.use("/api/admin/users", adminRoute);
 app.use("/api/admin/products", productAdminRoute);
 app.use("/api/admin/orders", adminOrderRoute);
 app.use("/api/analytics", analyticsRoute);
+app.use("/api/auth", authRoute);
 
 
 

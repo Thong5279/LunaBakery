@@ -38,6 +38,14 @@ const userSchema = new mongoose.Schema(
             type: String,
             trim: true,
             default: ""
+        },
+        avatar: {
+            type: String,
+            default: ""
+        },
+        googleId: {
+            type: String,
+            default: ""
         }
     },
     {timestamps: true}, // Automatically manage createdAt and updatedAt fields
